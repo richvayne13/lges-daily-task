@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="ko" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LGES 업무 관리 대시보드 (Daily & Weekly Dashboard)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c',
+            }
+          },
+          boxShadow: {
+            'card': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02)',
+            'card-hover': '0 20px 35px -5px rgba(0, 0, 0, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.04)',
+            'vivid': '0 10px 20px -3px var(--vivid-glow)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Pretendard Font & FontAwesome CDN -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+  <!-- SortableJS for Double Drag & Drop -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+  
+  <!-- Canvas Confetti for Celebration on Task Complete -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.5);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(107, 114, 128, 0.8);
+    }
+    
+    /* Dragging Ghost & Chosen Styles */
+    .sortable-ghost {
+      opacity: 0.35;
+      background: #e2e8f0 !important;
+      border: 2px dashed #6366f1 !important;
+      border-radius: 1.25rem !important;
+    }
+    .dark .sortable-ghost {
+      background: #334155 !important;
+      border-color: #818cf8 !important;
+    }
+    .sortable-chosen {
+      cursor: grabbing !important;
+    }
+
+    /* Card News Hover Lift */
+    .card-news-box {
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-news-box:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Print Optimization */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .card-news-box {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <!-- Top Hero Header Banner (Notion Reference Style) -->
+  <div class="relative bg-gradient-to-r from-slate-200 via-slate-100 to-stone-200 dark:from-slate-900 dark:via-slate-800 dark:to-stone-900 border-b border-slate-200 dark:border-slate-800 pt-8 pb-6 px-4 sm:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div class="flex items-center space-x-4">
+        <div class="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-md flex items-center justify-center text-3xl border border-slate-200 dark:border-slate-700">
+          📝
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+              LGES 업무 허브
+            </span>
+            <span id="current-clock" class="text-xs text-slate-500 dark:text-slate-400 font-mono"></span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
+            업무 일지 템플릿 & 스마트 대시보드
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+            카드뉴스 스타일의 비비드 대시보드 • 상하좌우 자유 드래그앤드롭 • 원클릭 즉시 완료 • GitHub 온라인 배포 지원
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons Bar -->
+      <div class="flex flex-wrap items-center gap-2 no-print">
+        <button onclick="openTaskModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold text-sm shadow-md hover:shadow-lg flex items-center gap-1.5 transition active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>새 업무 추가</span>
+        </button>
+
+        <button onclick="openProjectModal()" class="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-sm shadow-sm flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-folder-plus text-emerald-500"></i>
+          <span>프로젝트 관리</span>
+        </button>
+
+        <!-- Export/Import Buttons -->
+        <div class="relative inline-block text-left" id="backup-dropdown-container">
+          <button onclick="toggleDropdown('backup-menu')" class="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-sm shadow-sm flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-database text-blue-500"></i>
+            <span>데이터 관리</span>
+            <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
+          </button>
+          <div id="backup-menu" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-1.5 text-sm">
+            <a href="javascript:void(0)" onclick="exportDataJSON()" class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 gap-2">
+              <i class="fa-solid fa-download text-indigo-500"></i> 전체 백업 (JSON)
+            </a>
+            <label class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 gap-2 cursor-pointer">
+              <i class="fa-solid fa-upload text-emerald-500"></i> 백업 불러오기 (JSON)
+              <input type="file" id="json-file-input" accept=".json" class="hidden" onchange="importDataJSON(event)">
+            </label>
+            <a href="javascript:void(0)" onclick="exportDataCSV()" class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 gap-2">
+              <i class="fa-solid fa-file-excel text-green-600"></i> 엑셀 내보내기 (CSV)
+            </a>
+            <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+            <a href="javascript:void(0)" onclick="resetToDemoData()" class="flex items-center px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 gap-2">
+              <i class="fa-solid fa-rotate-left"></i> 샘플 데이터로 복원
+            </a>
+          </div>
+        </div>
+
+        <!-- Print PDF -->
+        <button onclick="window.print()" title="인쇄 / PDF 저장" class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 shadow-sm transition">
+          <i class="fa-solid fa-print"></i>
+        </button>
+
+        <!-- Dark Mode Toggle -->
+        <button onclick="toggleDarkMode()" title="다크 모드 전환" class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 shadow-sm transition">
+          <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Search & Filter Toolbar -->
+    <div class="max-w-7xl mx-auto mt-5 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-3 no-print">
+      <div class="flex items-center gap-2 flex-1 max-w-md">
+        <div class="relative w-full">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" id="quick-search-input" placeholder="업무명, 프로젝트, 키워드 실시간 검색 (Ctrl + K)..." 
+                 oninput="handleQuickSearch(this.value)"
+                 class="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-slate-500 font-medium">프로젝트 필터:</span>
+        <select id="project-filter-select" onchange="filterByProject(this.value)" class="py-1.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500">
+          <option value="ALL">전체 프로젝트</option>
+          <!-- Dynamic Project Options -->
+        </select>
+
+        <span class="text-slate-500 font-medium ml-2">업무구분:</span>
+        <select id="category-filter-select" onchange="filterByCategory(this.value)" class="py-1.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500">
+          <option value="ALL">전체 구분</option>
+          <option value="회의">☕ 회의</option>
+          <option value="개발">✨ 개발</option>
+          <option value="코드리뷰">👀 코드리뷰</option>
+          <option value="기획">📐 기획</option>
+          <option value="보고">📑 보고</option>
+          <option value="기타">📌 기타</option>
+        </select>
+        
+        <button onclick="resetLayoutOrder()" title="카드 배치 순서 기본값으로 초기화" class="px-2.5 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition flex items-center gap-1">
+          <i class="fa-solid fa-arrows-rotate text-xs"></i>
+          <span>배치 초기화</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container: Grid of Vivid Rounded News Cards (Sortable Widgets) -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-8 py-6">
+    
+    <!-- Top Highlights Section: 💬 REMINDER & 📘 MONTHLY (Reference Mockup Matched) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6" id="top-widgets-container">
+      
+      <!-- Card Widget: REMINDER (Vivid Amber/Yellow) -->
+      <div data-widget-id="widget-reminder" class="card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-amber-300 dark:border-amber-500/50 shadow-card hover:shadow-card-hover relative flex flex-col">
+        <!-- Card Header with Drag Handle -->
+        <div class="flex items-center justify-between pb-3 border-b border-amber-100 dark:border-amber-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-regular fa-comment-dots"></i>
+            </span>
+            <h2 class="font-extrabold text-amber-900 dark:text-amber-200 text-base tracking-wide flex items-center gap-1.5">
+              REMINDER
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" id="reminder-count">3</span>
+            </h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="addReminderPrompt()" title="메모 추가" class="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950 text-amber-600 dark:text-amber-400 transition">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Reminder Content List (Draggable inside) -->
+        <div id="reminder-list" class="space-y-2 flex-1 min-h-[90px]">
+          <!-- Dynamic Reminders -->
+        </div>
+      </div>
+
+      <!-- Card Widget: MONTHLY (Vivid Royal Blue/Sky) -->
+      <div data-widget-id="widget-monthly" class="card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-blue-400 dark:border-blue-500/50 shadow-card hover:shadow-card-hover relative flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-blue-100 dark:border-blue-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-solid fa-book-bookmark"></i>
+            </span>
+            <h2 class="font-extrabold text-blue-900 dark:text-blue-200 text-base tracking-wide flex items-center gap-1.5">
+              MONTHLY
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" id="current-month-badge">9월 목표</span>
+            </h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="addMonthlyGoalPrompt()" title="월간 목표 추가" class="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-600 dark:text-blue-400 transition">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Monthly Content List -->
+        <div id="monthly-list" class="space-y-2 flex-1 min-h-[90px]">
+          <!-- Dynamic Monthly Goals -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Dashboard Section: Left Calendar + Right Today To-Do + Bottom Week & Projects -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6" id="main-widgets-grid">
+
+      <!-- Left Column: Calendar Card (Vivid Royal Purple/Indigo) - Span 5 -->
+      <div data-widget-id="widget-calendar" class="lg:col-span-5 card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-indigo-400 dark:border-indigo-500/50 shadow-card hover:shadow-card-hover flex flex-col">
+        <!-- Calendar Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-indigo-100 dark:border-indigo-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-regular fa-calendar-days"></i>
+            </span>
+            <h2 class="font-extrabold text-indigo-900 dark:text-indigo-200 text-base tracking-wide">
+              스마트 캘린더
+            </h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Calendar Sub-Tabs: Today 캘린더 / Week 캘린더 / 주간업무보고 -->
+        <div class="flex items-center space-x-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-4 text-xs font-semibold">
+          <button id="cal-tab-today" onclick="switchCalendarView('today')" class="flex-1 py-1.5 rounded-xl bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-sm transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-calendar-day"></i> Today 캘린더
+          </button>
+          <button id="cal-tab-month" onclick="switchCalendarView('month')" class="flex-1 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-calendar"></i> Month 캘린더
+          </button>
+          <button id="cal-tab-report" onclick="switchCalendarView('report')" class="flex-1 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-chart-line"></i> 주간업무보고
+          </button>
+        </div>
+
+        <!-- Month Navigation Bar -->
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h3 id="calendar-month-title" class="font-bold text-slate-800 dark:text-slate-100 text-sm"></h3>
+          <div class="flex items-center space-x-1 text-xs">
+            <button onclick="prevMonth()" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button onclick="goToCurrentMonth()" class="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold hover:bg-indigo-100">
+              Today
+            </button>
+            <button onclick="nextMonth()" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Calendar Container View -->
+        <div id="calendar-view-area" class="flex-1">
+          <!-- Calendar Month Grid Rendered via JS -->
+        </div>
+
+        <!-- Selected Date Active Tasks Drawer -->
+        <div id="calendar-selected-info" class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2">
+            <span id="selected-date-label">📌 선택한 날짜의 업무</span>
+            <button onclick="addTaskOnSelectedDate()" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+              + 이 날짜에 등록
+            </button>
+          </div>
+          <div id="selected-date-tasks" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-xs">
+            <!-- Selected Date Tasks -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Today To-Do Card (Vivid Coral Rose/Scarlet) - Span 7 -->
+      <div data-widget-id="widget-today-todo" class="lg:col-span-7 card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-rose-400 dark:border-rose-500/50 shadow-card hover:shadow-card-hover flex flex-col">
+        <!-- Today To-Do Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-rose-100 dark:border-rose-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-solid fa-thumbtack"></i>
+            </span>
+            <h2 class="font-extrabold text-rose-900 dark:text-rose-200 text-base tracking-wide flex items-center gap-2">
+              Today To-do
+              <span id="todo-badge-stat" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                0건 진행중
+              </span>
+            </h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openTaskModal()" class="px-2.5 py-1 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow transition">
+              + 할일 추가
+            </button>
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Sub-Tabs: ≡ 오늘 할일 / ✓ 한일 (완료) -->
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <button id="tab-btn-pending" onclick="switchTodoTab('pending')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-rose-500 text-white shadow-sm transition flex items-center gap-1.5">
+              <i class="fa-solid fa-list-check"></i> 오늘 할일 (<span id="count-pending">0</span>)
+            </button>
+            <button id="tab-btn-completed" onclick="switchTodoTab('completed')" class="px-3.5 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-check-double text-emerald-500"></i> 한일 (완료) (<span id="count-completed">0</span>)
+            </button>
+          </div>
+          <span class="text-[11px] text-slate-400 hidden sm:inline-block">
+            💡 체크박스를 클릭하면 즉시 완료로 이동합니다
+          </span>
+        </div>
+
+        <!-- Today To-Do Table & Task List Container -->
+        <div class="flex-1 overflow-x-auto min-h-[300px]">
+          <!-- Table Header -->
+          <div class="grid grid-cols-12 gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl text-[11px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/60 mb-2">
+            <div class="col-span-1 text-center">완료</div>
+            <div class="col-span-2">날짜</div>
+            <div class="col-span-2">프로젝트</div>
+            <div class="col-span-2">업무구분</div>
+            <div class="col-span-3">할일</div>
+            <div class="col-span-2 text-right">상태 / 관리</div>
+          </div>
+
+          <!-- Sortable Task Item List (Card inside DnD enabled) -->
+          <div id="today-task-list" class="space-y-2 min-h-[220px]">
+            <!-- Dynamic Tasks Loaded here -->
+          </div>
+        </div>
+
+        <!-- Completion Progress Bar within Card -->
+        <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 w-full max-w-xs">
+            <span class="font-medium text-slate-500">오늘 달성률:</span>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+              <div id="today-progress-bar" class="bg-gradient-to-r from-rose-500 to-pink-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+          <span id="today-progress-percent" class="font-extrabold text-rose-600 dark:text-rose-400">0%</span>
+        </div>
+      </div>
+
+      <!-- Bottom Widget 1: 🚀 프로젝트 관리 카드 (Vivid Emerald/Green) - Span 6 -->
+      <div data-widget-id="widget-projects" class="lg:col-span-6 card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-emerald-400 dark:border-emerald-500/50 shadow-card hover:shadow-card-hover flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-emerald-100 dark:border-emerald-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-solid fa-diagram-project"></i>
+            </span>
+            <h2 class="font-extrabold text-emerald-900 dark:text-emerald-200 text-base tracking-wide flex items-center gap-2">
+              주요 프로젝트 현황
+              <span id="project-count-badge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                0개
+              </span>
+            </h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="openProjectModal()" title="새 프로젝트 등록" class="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-600 dark:text-emerald-400 transition">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Project Cards Grid -->
+        <div id="project-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-[160px]">
+          <!-- Dynamic Project Cards -->
+        </div>
+      </div>
+
+      <!-- Bottom Widget 2: 🐬 Week To-do (주간 업무 일지) (Vivid Teal/Cyan) - Span 6 -->
+      <div data-widget-id="widget-week-todo" class="lg:col-span-6 card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-teal-400 dark:border-teal-500/50 shadow-card hover:shadow-card-hover flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-teal-100 dark:border-teal-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-teal-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-solid fa-calendar-week"></i>
+            </span>
+            <h2 class="font-extrabold text-teal-900 dark:text-teal-200 text-base tracking-wide flex items-center gap-2">
+              Week To-do (주간 업무 일정)
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+                월 ~ 금 배치
+              </span>
+            </h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Weekly Days Kanban Columns (월~금) -->
+        <div class="grid grid-cols-5 gap-2 flex-1 overflow-x-auto min-w-[500px]" id="week-kanban-board">
+          <!-- Dynamic 5 Days Kanban Columns -->
+        </div>
+      </div>
+
+      <!-- Bottom Widget 3: 📊 생산성 및 업무 통계 분석 (Vivid Sunset Orange) - Span 12 -->
+      <div data-widget-id="widget-stats" class="lg:col-span-12 card-news-box bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-orange-400 dark:border-orange-500/50 shadow-card hover:shadow-card-hover flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-orange-100 dark:border-orange-950/80 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              <i class="fa-solid fa-chart-pie"></i>
+            </span>
+            <h2 class="font-extrabold text-orange-900 dark:text-orange-200 text-base tracking-wide">
+              주간 생산성 및 업무 분석 통계
+            </h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="drag-handle cursor-grab p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400" title="카드 순서 드래그">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Stats Overview Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div class="p-4 rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60">
+            <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold">전체 등록 업무</div>
+            <div id="stat-total-tasks" class="text-2xl font-black text-orange-900 dark:text-orange-100 mt-1">0</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">완료한 업무</div>
+            <div id="stat-done-tasks" class="text-2xl font-black text-emerald-900 dark:text-emerald-100 mt-1">0</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60">
+            <div class="text-xs text-rose-600 dark:text-rose-400 font-semibold">진행 중인 업무</div>
+            <div id="stat-pending-tasks" class="text-2xl font-black text-rose-900 dark:text-rose-100 mt-1">0</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60">
+            <div class="text-xs text-blue-600 dark:text-blue-400 font-semibold">이번 주 총 달성률</div>
+            <div id="stat-completion-rate" class="text-2xl font-black text-blue-900 dark:text-blue-100 mt-1">0%</div>
+          </div>
+        </div>
+
+        <!-- Category Distribution Bars -->
+        <div class="pt-2">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">업무 구분별 분포도</div>
+          <div id="category-distribution-bars" class="space-y-2">
+            <!-- Dynamic Category Percentages -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Floating Toast Snackbar for Undo Action -->
+  <div id="toast-snackbar" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-900 text-white shadow-2xl border border-slate-700">
+    <div class="w-7 h-7 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-xs">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <div class="text-sm">
+      <p id="toast-message" class="font-semibold">업무가 완료 처리되었습니다.</p>
+    </div>
+    <button id="toast-undo-btn" onclick="undoLastAction()" class="ml-2 px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-xs font-bold text-white transition">
+      실행 취소
+    </button>
+  </div>
+
+  <!-- Task Modal: Add / Edit Task -->
+  <div id="task-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-scaleIn">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
+        <h3 id="modal-task-title" class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center text-sm">
+            <i class="fa-solid fa-pen-nib"></i>
+          </span>
+          새 업무 등록
+        </h3>
+        <button onclick="closeTaskModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="task-form" onsubmit="saveTaskForm(event)" class="space-y-3.5">
+        <input type="hidden" id="form-task-id">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">할 일 내용 *</label>
+          <input type="text" id="form-task-title" required placeholder="예: 후보자 관리 레이어 리뷰" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">날짜 *</label>
+            <input type="date" id="form-task-date" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">프로젝트 *</label>
+            <select id="form-task-project" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <!-- Dynamically Populated -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">업무 구분</label>
+            <select id="form-task-category" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="회의">☕ 회의</option>
+              <option value="개발" selected>✨ 개발</option>
+              <option value="코드리뷰">👀 코드리뷰</option>
+              <option value="기획">📐 기획</option>
+              <option value="보고">📑 보고</option>
+              <option value="기타">📌 기타</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">상태</label>
+            <select id="form-task-status" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="시작 전">⚪ 시작 전</option>
+              <option value="진행 중" selected>🔵 진행 중</option>
+              <option value="검토 중">🟡 검토 중</option>
+              <option value="완료">🟢 완료</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">우선순위</label>
+            <select id="form-task-priority" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="높음">🔥 높음 (긴급)</option>
+              <option value="보통" selected>⚡ 보통</option>
+              <option value="낮음">☕ 여유</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">주간 요일 (선택)</label>
+            <select id="form-task-weekday" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="">자동 계산</option>
+              <option value="월">월요일</option>
+              <option value="화">화요일</option>
+              <option value="수">수요일</option>
+              <option value="목">목요일</option>
+              <option value="금">금요일</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">비고 / 세부 메모</label>
+          <textarea id="form-task-note" rows="2" placeholder="필요시 세부 요구사항 또는 링크를 적어주세요." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-md transition">
+            저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Modal: Add / Edit Project -->
+  <div id="project-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-scaleIn">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-sm">
+            <i class="fa-solid fa-folder-plus"></i>
+          </span>
+          프로젝트 관리
+        </h3>
+        <button onclick="closeProjectModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="project-form" onsubmit="saveProjectForm(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">프로젝트 명칭 *</label>
+          <input type="text" id="form-project-name" required placeholder="예: 차세대 고밀도 셀 개발" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">대표 배지 라벨 (약칭) *</label>
+          <input type="text" id="form-project-code" required placeholder="예: HIPE, LGES-GEN2" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">마감 목표일 (D-Day)</label>
+            <input type="date" id="form-project-deadline" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">테마 컬러</label>
+            <select id="form-project-color" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="orange">오렌지 (HIPE 톤)</option>
+              <option value="emerald">에메랄드 그린</option>
+              <option value="blue">로얄 블루</option>
+              <option value="purple">바이올렛 퍼플</option>
+              <option value="rose">로즈 핑크</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" onclick="closeProjectModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md transition">
+            등록하기
+          </button>
+        </div>
+      </form>
+
+      <!-- Existing Projects List with Delete Option -->
+      <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <div class="text-xs font-bold text-slate-500 mb-2">등록된 프로젝트 목록</div>
+        <div id="modal-project-list" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-xs">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script>
+    // Initial Seed Data (Faithfully matching user's uploaded mockup reference)
+    const DEFAULT_DATA = {
+      reminders: [
+        { id: 'rem-1', text: '오전 10시 배터리 개발 주간 스크럼 준비', checked: false },
+        { id: 'rem-2', text: '후보자 평가표 및 기술 면접 피드백 제출', checked: false },
+        { id: 'rem-3', text: '신규 전극 코팅 공정 레퍼런스 검토', checked: false }
+      ],
+      monthly: [
+        { id: 'mon-1', text: 'HIPE 2단계 파일럿 레이어 검증 완료', progress: 80 },
+        { id: 'mon-2', text: '주간 업무 일지 템플릿 표준화 및 배포', progress: 100 },
+        { id: 'mon-3', text: '공정 수율 개선 과제 1차 리뷰 통과', progress: 50 }
+      ],
+      projects: [
+        { id: 'proj-hipe', code: 'HIPE', name: 'HIPE 평가자 시스템 개발', deadline: '2026-09-30', color: 'orange' },
+        { id: 'proj-battery', code: '배터리공정', name: '전극 코팅 수율 고도화', deadline: '2026-10-15', color: 'emerald' },
+        { id: 'proj-qc', code: '품질혁신', name: '인라인 외관 검사 알고리즘', deadline: '2026-11-01', color: 'blue' },
+        { id: 'proj-std', code: '표준화', name: '부서별 업무 템플릿 정립', deadline: '2026-09-25', color: 'purple' }
+      ],
+      tasks: [
+        {
+          id: 'task-1',
+          date: '2026-09-15',
+          projectCode: 'HIPE',
+          category: '회의',
+          title: '후보자 관리 레이어 리뷰',
+          status: '시작 전',
+          priority: '보통',
+          completed: false,
+          weekday: '화',
+          note: '전사 인터뷰 평가표 인터페이스 검토'
+        },
+        {
+          id: 'task-2',
+          date: '2026-09-15',
+          projectCode: 'HIPE',
+          category: '개발',
+          title: '후보자 뷰 - 상단 이동 바 (GNB) 개발',
+          status: '진행 중',
+          priority: '높음',
+          completed: false,
+          weekday: '화',
+          note: '반응형 내비게이션 바 컴포넌트 완성'
+        },
+        {
+          id: 'task-3',
+          date: '2026-09-15',
+          projectCode: 'HIPE',
+          category: '코드리뷰',
+          title: '평가자 템플릿 불러오기 모달 구현',
+          status: '진행 중',
+          priority: '보통',
+          completed: false,
+          weekday: '화',
+          note: 'JSON 템플릿 파서 연동 및 에러핸들링'
+        },
+        {
+          id: 'task-4',
+          date: '2026-09-14',
+          projectCode: '배터리공정',
+          category: '보고',
+          title: '전극 슬러리 점도 측정 결과 주간 취합',
+          status: '완료',
+          priority: '보통',
+          completed: true,
+          weekday: '월',
+          note: '공정기술팀 공유 완료'
+        },
+        {
+          id: 'task-5',
+          date: '2026-09-16',
+          projectCode: '품질혁신',
+          category: '기획',
+          title: '비전 검사 결함 판정 기준안 초안 작성',
+          status: '시작 전',
+          priority: '높음',
+          completed: false,
+          weekday: '수',
+          note: '머신러닝 분류기 임계치 정의'
+        },
+        {
+          id: 'task-6',
+          date: '2026-09-17',
+          projectCode: '표준화',
+          category: '회의',
+          title: '주간 업무 일지 템플릿 팀 피드백 미팅',
+          status: '시작 전',
+          priority: '보통',
+          completed: false,
+          weekday: '목',
+          note: '사용자 편의성 검증'
+        },
+        {
+          id: 'task-7',
+          date: '2026-09-18',
+          projectCode: 'HIPE',
+          category: '보고',
+          title: 'HIPE 주간 릴리즈 보고서 작성',
+          status: '시작 전',
+          priority: '보통',
+          completed: false,
+          weekday: '금',
+          note: '경영진 주간 보고용'
+        }
+      ]
+    };
+
+    // State Variables
+    let appData = null;
+    let currentTodoTab = 'pending'; // 'pending' or 'completed'
+    let currentCalView = 'today';   // 'today', 'month', 'report'
+    let selectedDate = '2026-09-15';
+    let calendarCurrentYear = 2026;
+    let calendarCurrentMonth = 8; // 0-indexed (8 is September)
+    let projectFilter = 'ALL';
+    let categoryFilter = 'ALL';
+    let searchQuery = '';
+    let lastUndoAction = null;
+    let undoToastTimer = null;
+
+    // LocalStorage Keys
+    const STORAGE_KEY = 'LGES_DAILY_TASK_DASHBOARD_v1';
+    const THEME_KEY = 'LGES_THEME_PREF';
+    const WIDGET_ORDER_KEY = 'LGES_WIDGET_ORDER';
+
+    // Initialize App
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      loadData();
+      startClock();
+      initSortableWidgets();
+      initKeyboardShortcuts();
+      renderAll();
+    });
+
+    // Theme Toggle (Dark / Light)
+    function initTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').className = 'fa-solid fa-sun text-amber-400';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('theme-icon').className = 'fa-solid fa-moon';
+      }
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+      document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon';
+    }
+
+    // Load Data from LocalStorage
+    function loadData() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          appData = JSON.parse(stored);
+        } else {
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          saveData();
+        }
+      } catch (e) {
+        console.error('Failed to parse localStorage:', e);
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    // Real-time Clock
+    function startClock() {
+      const update = () => {
+        const now = new Date();
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        const day = days[now.getDay()];
+        const hours = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        const secs = String(now.getSeconds()).padStart(2, '0');
+        const el = document.getElementById('current-clock');
+        if (el) {
+          el.innerText = `${year}.${month}.${date} (${day}) ${hours}:${mins}:${secs}`;
+        }
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    // Main Render Function
+    function renderAll() {
+      renderReminders();
+      renderMonthly();
+      renderProjects();
+      renderTodayTasks();
+      renderCalendar();
+      renderWeekKanban();
+      renderStats();
+      updateFilterDropdowns();
+    }
+
+    // 1. Render REMINDER Widget
+    function renderReminders() {
+      const container = document.getElementById('reminder-list');
+      const countEl = document.getElementById('reminder-count');
+      if (!container) return;
+
+      container.innerHTML = '';
+      countEl.innerText = appData.reminders.length;
+
+      if (appData.reminders.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center">등록된 리마인더가 없습니다.</div>`;
+        return;
+      }
+
+      appData.reminders.forEach((rem, idx) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 hover:bg-amber-100/70 dark:hover:bg-amber-900/50 transition text-xs text-amber-900 dark:text-amber-100 group border border-amber-200/60 dark:border-amber-900/60';
+        item.dataset.id = rem.id;
+
+        item.innerHTML = `
+          <div class="flex items-center gap-2 flex-1 mr-2 cursor-pointer" onclick="toggleReminder('${rem.id}')">
+            <span class="w-4 h-4 rounded-md border flex items-center justify-center ${rem.checked ? 'bg-amber-500 border-amber-500 text-white' : 'border-amber-400 bg-white dark:bg-slate-800'}">
+              ${rem.checked ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+            </span>
+            <span class="${rem.checked ? 'line-through opacity-50' : 'font-medium'} select-none">${rem.text}</span>
+          </div>
+          <button onclick="deleteReminder('${rem.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        `;
+        container.appendChild(item);
+      });
+
+      // Sortable inside reminder
+      if (!container._sortable) {
+        container._sortable = new Sortable(container, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          onEnd: function () {
+            const newOrder = [];
+            container.querySelectorAll('[data-id]').forEach(el => {
+              const r = appData.reminders.find(x => x.id === el.dataset.id);
+              if (r) newOrder.push(r);
+            });
+            appData.reminders = newOrder;
+            saveData();
+          }
+        });
+      }
+    }
+
+    function toggleReminder(id) {
+      const r = appData.reminders.find(x => x.id === id);
+      if (r) {
+        r.checked = !r.checked;
+        saveData();
+        renderReminders();
+      }
+    }
+
+    function addReminderPrompt() {
+      const text = prompt('새로운 리마인더 / 메모를 입력하세요:');
+      if (text && text.trim()) {
+        appData.reminders.push({
+          id: 'rem-' + Date.now(),
+          text: text.trim(),
+          checked: false
+        });
+        saveData();
+        renderReminders();
+      }
+    }
+
+    function deleteReminder(id) {
+      appData.reminders = appData.reminders.filter(x => x.id !== id);
+      saveData();
+      renderReminders();
+    }
+
+    // 2. Render MONTHLY Widget
+    function renderMonthly() {
+      const container = document.getElementById('monthly-list');
+      if (!container) return;
+
+      container.innerHTML = '';
+      if (appData.monthly.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center">등록된 월간 목표가 없습니다.</div>`;
+        return;
+      }
+
+      appData.monthly.forEach((m) => {
+        const item = document.createElement('div');
+        item.className = 'p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/60 group';
+        item.innerHTML = `
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span class="font-bold text-blue-950 dark:text-blue-200">${m.text}</span>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-blue-600 dark:text-blue-400">${m.progress}%</span>
+              <button onclick="editMonthlyProgress('${m.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-blue-600 transition" title="진척도 변경">
+                <i class="fa-solid fa-pen text-[10px]"></i>
+              </button>
+              <button onclick="deleteMonthlyGoal('${m.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-500 transition" title="삭제">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+          </div>
+          <div class="w-full bg-blue-200 dark:bg-blue-900/80 rounded-full h-2 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${m.progress}%"></div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function addMonthlyGoalPrompt() {
+      const text = prompt('새 월간 핵심 목표를 입력하세요:');
+      if (text && text.trim()) {
+        const prog = prompt('현재 진척도 (% 0~100):', '30');
+        const progress = Math.min(100, Math.max(0, parseInt(prog) || 0));
+        appData.monthly.push({
+          id: 'mon-' + Date.now(),
+          text: text.trim(),
+          progress: progress
+        });
+        saveData();
+        renderMonthly();
+      }
+    }
+
+    function editMonthlyProgress(id) {
+      const m = appData.monthly.find(x => x.id === id);
+      if (!m) return;
+      const prog = prompt(`'${m.text}' 목표의 진척도 (%):`, m.progress);
+      if (prog !== null) {
+        m.progress = Math.min(100, Math.max(0, parseInt(prog) || 0));
+        saveData();
+        renderMonthly();
+      }
+    }
+
+    function deleteMonthlyGoal(id) {
+      appData.monthly = appData.monthly.filter(x => x.id !== id);
+      saveData();
+      renderMonthly();
+    }
+
+    // 3. Render Today To-Do Widget (Double Drag & Instant Check Complete)
+    function switchTodoTab(tab) {
+      currentTodoTab = tab;
+      const btnPending = document.getElementById('tab-btn-pending');
+      const btnCompleted = document.getElementById('tab-btn-completed');
+
+      if (tab === 'pending') {
+        btnPending.className = 'px-3.5 py-1.5 rounded-xl font-bold text-xs bg-rose-500 text-white shadow-sm transition flex items-center gap-1.5';
+        btnCompleted.className = 'px-3.5 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition flex items-center gap-1.5';
+      } else {
+        btnCompleted.className = 'px-3.5 py-1.5 rounded-xl font-bold text-xs bg-emerald-600 text-white shadow-sm transition flex items-center gap-1.5';
+        btnPending.className = 'px-3.5 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition flex items-center gap-1.5';
+      }
+      renderTodayTasks();
+    }
+
+    function renderTodayTasks() {
+      const container = document.getElementById('today-task-list');
+      const countPendingEl = document.getElementById('count-pending');
+      const countCompletedEl = document.getElementById('count-completed');
+      const todoBadgeEl = document.getElementById('todo-badge-stat');
+      if (!container) return;
+
+      const allTasks = appData.tasks;
+      const pendingTasks = allTasks.filter(t => !t.completed);
+      const completedTasks = allTasks.filter(t => t.completed);
+
+      countPendingEl.innerText = pendingTasks.length;
+      countCompletedEl.innerText = completedTasks.length;
+      todoBadgeEl.innerText = `${pendingTasks.length}건 진행중`;
+
+      // Filter tasks according to tab, project, category, and search query
+      let filtered = (currentTodoTab === 'pending' ? pendingTasks : completedTasks);
+
+      if (projectFilter !== 'ALL') {
+        filtered = filtered.filter(t => t.projectCode === projectFilter);
+      }
+      if (categoryFilter !== 'ALL') {
+        filtered = filtered.filter(t => t.category === categoryFilter);
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(t => 
+          (t.title && t.title.toLowerCase().includes(q)) ||
+          (t.projectCode && t.projectCode.toLowerCase().includes(q)) ||
+          (t.note && t.note.toLowerCase().includes(q)) ||
+          (t.category && t.category.toLowerCase().includes(q))
+        );
+      }
+
+      container.innerHTML = '';
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+            <i class="fa-solid fa-inbox text-3xl mb-2 opacity-40"></i>
+            <p>표시할 업무 내역이 없습니다.</p>
+          </div>
+        `;
+        updateTodayProgressBar();
+        return;
+      }
+
+      filtered.forEach((task) => {
+        const item = document.createElement('div');
+        item.className = `task-row-item grid grid-cols-12 gap-2 items-center p-2.5 rounded-2xl border transition-all duration-200 text-xs ${
+          task.completed 
+            ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500' 
+            : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-700 shadow-sm'
+        }`;
+        item.dataset.id = task.id;
+
+        // Project badge colors
+        const projBadgeClass = getProjectBadgeStyle(task.projectCode);
+        const catBadgeClass = getCategoryBadgeStyle(task.category);
+        const statusBadgeClass = getStatusBadgeStyle(task.status);
+
+        item.innerHTML = `
+          <!-- Checkbox: Instant Complete without prompt -->
+          <div class="col-span-1 flex items-center justify-center">
+            <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                   onchange="handleTaskCheckbox('${task.id}', this.checked)"
+                   class="w-4 h-4 rounded-md text-rose-600 focus:ring-rose-500 cursor-pointer accent-rose-500 transition transform hover:scale-110">
+          </div>
+
+          <!-- Date -->
+          <div class="col-span-2 font-mono text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+            <i class="fa-regular fa-calendar text-[10px]"></i>
+            <span>${task.date || '-'}</span>
+          </div>
+
+          <!-- Project Badge -->
+          <div class="col-span-2 truncate">
+            <span class="inline-block px-2 py-0.5 rounded-lg text-[11px] font-bold ${projBadgeClass}">
+              ${task.projectCode || '일반'}
+            </span>
+          </div>
+
+          <!-- Category Badge -->
+          <div class="col-span-2 truncate">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold ${catBadgeClass}">
+              ${getCategoryIcon(task.category)} ${task.category || '기타'}
+            </span>
+          </div>
+
+          <!-- Task Title -->
+          <div class="col-span-3 font-medium ${task.completed ? 'line-through' : 'text-slate-900 dark:text-slate-100'} truncate" title="${task.title}">
+            ${task.title}
+            ${task.note ? `<span class="text-[10px] text-slate-400 block truncate">${task.note}</span>` : ''}
+          </div>
+
+          <!-- Status & Actions -->
+          <div class="col-span-2 flex items-center justify-end gap-1.5">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusBadgeClass}">
+              ${task.status || '대기'}
+            </span>
+            <button onclick="editTaskModal('${task.id}')" class="p-1 text-slate-400 hover:text-indigo-500 transition" title="수정">
+              <i class="fa-solid fa-pen-to-square text-xs"></i>
+            </button>
+            <button onclick="deleteTask('${task.id}')" class="p-1 text-slate-400 hover:text-rose-500 transition" title="삭제">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        `;
+
+        container.appendChild(item);
+      });
+
+      // Initialize SortableJS on task list (inner card DnD)
+      if (!container._sortable) {
+        container._sortable = new Sortable(container, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          handle: '.task-row-item',
+          onEnd: function () {
+            const reorderedIds = Array.from(container.querySelectorAll('.task-row-item')).map(el => el.dataset.id);
+            // Reorder in state
+            const remainingTasks = appData.tasks.filter(t => !reorderedIds.includes(t.id));
+            const reordered = reorderedIds.map(id => appData.tasks.find(t => t.id === id)).filter(Boolean);
+            appData.tasks = [...reordered, ...remainingTasks];
+            saveData();
+          }
+        });
+      }
+
+      updateTodayProgressBar();
+    }
+
+    // Instant Complete Action with Confetti and Undo Toast
+    function handleTaskCheckbox(id, isChecked) {
+      const task = appData.tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const previousStatus = task.status;
+      const previousCompleted = task.completed;
+
+      task.completed = isChecked;
+      task.status = isChecked ? '완료' : '진행 중';
+      saveData();
+
+      // Confetti burst on completion!
+      if (isChecked && typeof confetti === 'function') {
+        confetti({
+          particleCount: 40,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+      }
+
+      // Show Undo Toast
+      lastUndoAction = {
+        taskId: id,
+        previousStatus: previousStatus,
+        previousCompleted: previousCompleted
+      };
+      showUndoToast(isChecked ? '🎉 업무가 즉시 [완료]로 이동되었습니다.' : '업무가 [오늘 할일]로 복귀되었습니다.');
+
+      renderAll();
+    }
+
+    function showUndoToast(msg) {
+      const toast = document.getElementById('toast-snackbar');
+      const msgEl = document.getElementById('toast-message');
+      if (!toast || !msgEl) return;
+
+      msgEl.innerText = msg;
+      toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      if (undoToastTimer) clearTimeout(undoToastTimer);
+      undoToastTimer = setTimeout(() => {
+        hideUndoToast();
+      }, 3500);
+    }
+
+    function hideUndoToast() {
+      const toast = document.getElementById('toast-snackbar');
+      if (toast) {
+        toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }
+    }
+
+    function undoLastAction() {
+      if (!lastUndoAction) return;
+      const task = appData.tasks.find(t => t.id === lastUndoAction.taskId);
+      if (task) {
+        task.completed = lastUndoAction.previousCompleted;
+        task.status = lastUndoAction.previousStatus;
+        saveData();
+        renderAll();
+      }
+      hideUndoToast();
+      lastUndoAction = null;
+    }
+
+    function updateTodayProgressBar() {
+      const total = appData.tasks.length;
+      const done = appData.tasks.filter(t => t.completed).length;
+      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+      const bar = document.getElementById('today-progress-bar');
+      const text = document.getElementById('today-progress-percent');
+      if (bar) bar.style.width = pct + '%';
+      if (text) text.innerText = pct + '%';
+    }
+
+    // 4. Render Calendar Card
+    function switchCalendarView(mode) {
+      currentCalView = mode;
+      const tabs = {
+        today: document.getElementById('cal-tab-today'),
+        month: document.getElementById('cal-tab-month'),
+        report: document.getElementById('cal-tab-report')
+      };
+
+      Object.keys(tabs).forEach(k => {
+        if (k === mode) {
+          tabs[k].className = 'flex-1 py-1.5 rounded-xl bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-sm transition flex items-center justify-center gap-1 font-bold';
+        } else {
+          tabs[k].className = 'flex-1 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition flex items-center justify-center gap-1';
+        }
+      });
+
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const area = document.getElementById('calendar-view-area');
+      const title = document.getElementById('calendar-month-title');
+      if (!area || !title) return;
+
+      const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+      title.innerText = `${calendarCurrentYear}년 ${monthNames[calendarCurrentMonth]}`;
+
+      if (currentCalView === 'month' || currentCalView === 'today') {
+        renderMonthGrid(area);
+      } else if (currentCalView === 'report') {
+        renderWeeklyReportView(area);
+      }
+
+      renderSelectedDateTasks();
+    }
+
+    function renderMonthGrid(container) {
+      const firstDay = new Date(calendarCurrentYear, calendarCurrentMonth, 1).getDay();
+      const daysInMonth = new Date(calendarCurrentYear, calendarCurrentMonth + 1, 0).getDate();
+      const prevMonthDays = new Date(calendarCurrentYear, calendarCurrentMonth, 0).getDate();
+
+      const dayHeaders = ['일', '월', '화', '수', '목', '금', '토'];
+
+      let html = `
+        <div class="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-slate-400 mb-1">
+          ${dayHeaders.map((d, i) => `<div class="${i === 0 ? 'text-rose-500' : (i === 6 ? 'text-blue-500' : '')}">${d}</div>`).join('')}
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-xs">
+      `;
+
+      // Previous month padding days
+      for (let i = firstDay - 1; i >= 0; i--) {
+        const d = prevMonthDays - i;
+        html += `<div class="h-10 sm:h-12 p-1 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-slate-300 dark:text-slate-600 text-left font-mono">${d}</div>`;
+      }
+
+      // Current month days
+      const todayStr = '2026-09-15'; // Default Today
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = dateStr === todayStr;
+        const isSelected = dateStr === selectedDate;
+        const tasksOnDate = appData.tasks.filter(t => t.date === dateStr);
+
+        html += `
+          <div onclick="selectCalendarDate('${dateStr}')" 
+               class="h-10 sm:h-12 p-1 rounded-xl cursor-pointer transition flex flex-col justify-between border ${
+                 isSelected 
+                   ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60' 
+                   : (isToday ? 'border-rose-400 bg-rose-50/40 dark:bg-rose-950/20' : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800')
+               }">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[11px] ${isToday ? 'w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-[10px]' : (isSelected ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300')}">
+                ${day}
+              </span>
+              ${tasksOnDate.length > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>` : ''}
+            </div>
+            ${tasksOnDate.length > 0 ? `
+              <div class="truncate text-[9px] px-1 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 font-semibold">
+                ${tasksOnDate[0].title}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function renderWeeklyReportView(container) {
+      const thisWeekTasks = appData.tasks;
+      const doneCount = thisWeekTasks.filter(t => t.completed).length;
+      const rate = thisWeekTasks.length ? Math.round((doneCount / thisWeekTasks.length) * 100) : 0;
+
+      container.innerHTML = `
+        <div class="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 text-xs">
+          <div class="font-bold text-indigo-950 dark:text-indigo-200 mb-2 flex items-center justify-between">
+            <span>📈 주간 업무 보고 요약 (9월 3주차)</span>
+            <span class="px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 font-bold">${rate}% 완료</span>
+          </div>
+          <p class="text-slate-600 dark:text-slate-300 mb-2">
+            • 총 ${thisWeekTasks.length}건 중 <strong>${doneCount}건 완료</strong> / ${thisWeekTasks.length - doneCount}건 진행 중<br>
+            • HIPE 인터뷰 평가자 레이어 및 상단 네비게이션 바 개발 집중 진행 중<br>
+            • 배터리 공정 기술팀 및 품질혁신팀 간 주간 스크럼 정상 진행
+          </p>
+          <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold text-[11px] hover:bg-indigo-700">
+              <i class="fa-solid fa-file-pdf mr-1"></i> 주간보고서 인쇄/저장
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectCalendarDate(dateStr) {
+      selectedDate = dateStr;
+      renderCalendar();
+    }
+
+    function renderSelectedDateTasks() {
+      const label = document.getElementById('selected-date-label');
+      const list = document.getElementById('selected-date-tasks');
+      if (!label || !list) return;
+
+      label.innerText = `📌 [${selectedDate}] 업무 목록`;
+      const tasksOnDate = appData.tasks.filter(t => t.date === selectedDate);
+
+      list.innerHTML = '';
+      if (tasksOnDate.length === 0) {
+        list.innerHTML = `<div class="text-slate-400 py-1 text-center">해당 날짜에 등록된 업무가 없습니다.</div>`;
+        return;
+      }
+
+      tasksOnDate.forEach(t => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700';
+        row.innerHTML = `
+          <div class="flex items-center gap-1.5 truncate">
+            <span class="w-2 h-2 rounded-full ${t.completed ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
+            <span class="font-medium ${t.completed ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200'} truncate">${t.title}</span>
+          </div>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200 dark:bg-slate-700">${t.projectCode}</span>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function prevMonth() {
+      if (calendarCurrentMonth === 0) {
+        calendarCurrentMonth = 11;
+        calendarCurrentYear--;
+      } else {
+        calendarCurrentMonth--;
+      }
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      if (calendarCurrentMonth === 11) {
+        calendarCurrentMonth = 0;
+        calendarCurrentYear++;
+      } else {
+        calendarCurrentMonth++;
+      }
+      renderCalendar();
+    }
+
+    function goToCurrentMonth() {
+      calendarCurrentYear = 2026;
+      calendarCurrentMonth = 8;
+      selectedDate = '2026-09-15';
+      renderCalendar();
+    }
+
+    function addTaskOnSelectedDate() {
+      openTaskModal({ date: selectedDate });
+    }
+
+    // 5. Render Project Cards Widget
+    function renderProjects() {
+      const container = document.getElementById('project-list');
+      const badge = document.getElementById('project-count-badge');
+      if (!container) return;
+
+      container.innerHTML = '';
+      badge.innerText = `${appData.projects.length}개`;
+
+      appData.projects.forEach(p => {
+        const tasks = appData.tasks.filter(t => t.projectCode === p.code);
+        const done = tasks.filter(t => t.completed).length;
+        const total = tasks.length;
+        const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex flex-col justify-between hover:border-emerald-400 transition';
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="px-2 py-0.5 rounded-lg text-xs font-extrabold ${getProjectBadgeStyle(p.code)}">
+                ${p.code}
+              </span>
+              <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                ${p.deadline ? `D-Day: ${p.deadline}` : ''}
+              </span>
+            </div>
+            <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate mt-1">${p.name}</h4>
+          </div>
+
+          <div class="mt-3">
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="text-slate-500 font-medium">진척률 (${done}/${total}건)</span>
+              <span class="font-extrabold text-emerald-600 dark:text-emerald-400">${pct}%</span>
+            </div>
+            <div class="w-full bg-emerald-200/80 dark:bg-emerald-900 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-1.5 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // 6. Render Week Kanban Board (Mon ~ Fri)
+    function renderWeekKanban() {
+      const container = document.getElementById('week-kanban-board');
+      if (!container) return;
+
+      const days = ['월', '화', '수', '목', '금'];
+      container.innerHTML = '';
+
+      days.forEach(day => {
+        const dayTasks = appData.tasks.filter(t => t.weekday === day);
+        const col = document.createElement('div');
+        col.className = 'flex flex-col rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/60 p-2 min-h-[160px]';
+        col.innerHTML = `
+          <div class="flex items-center justify-between pb-1.5 border-b border-teal-200 dark:border-teal-800/60 mb-2">
+            <span class="font-extrabold text-xs text-teal-900 dark:text-teal-200">${day}요일</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-teal-200 dark:bg-teal-900 text-teal-800 dark:text-teal-200">${dayTasks.length}</span>
+          </div>
+          <div class="week-drop-col flex-1 space-y-1.5 min-h-[100px]" data-weekday="${day}">
+            ${dayTasks.map(t => `
+              <div data-id="${t.id}" class="p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] shadow-sm cursor-grab">
+                <div class="font-medium truncate ${t.completed ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200'}">${t.title}</div>
+                <div class="flex items-center justify-between text-[9px] text-slate-400 mt-1">
+                  <span>${t.projectCode}</span>
+                  <span class="${t.completed ? 'text-emerald-500' : 'text-rose-500'}">${t.completed ? '완료' : '진행'}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(col);
+
+        // Sortable cross-column drag & drop
+        const dropZone = col.querySelector('.week-drop-col');
+        new Sortable(dropZone, {
+          group: 'week-tasks',
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          onEnd: function (evt) {
+            const taskId = evt.item.dataset.id;
+            const newDay = evt.to.dataset.weekday;
+            const t = appData.tasks.find(x => x.id === taskId);
+            if (t && newDay) {
+              t.weekday = newDay;
+              saveData();
+              renderWeekKanban();
+            }
+          }
+        });
+      });
+    }
+
+    // 7. Render Overall Stats Widget
+    function renderStats() {
+      const total = appData.tasks.length;
+      const done = appData.tasks.filter(t => t.completed).length;
+      const pending = total - done;
+      const rate = total === 0 ? 0 : Math.round((done / total) * 100);
+
+      document.getElementById('stat-total-tasks').innerText = total;
+      document.getElementById('stat-done-tasks').innerText = done;
+      document.getElementById('stat-pending-tasks').innerText = pending;
+      document.getElementById('stat-completion-rate').innerText = rate + '%';
+
+      // Category breakdown
+      const categories = ['회의', '개발', '코드리뷰', '기획', '보고', '기타'];
+      const catContainer = document.getElementById('category-distribution-bars');
+      if (!catContainer) return;
+
+      catContainer.innerHTML = '';
+      categories.forEach(cat => {
+        const count = appData.tasks.filter(t => t.category === cat).length;
+        const pct = total === 0 ? 0 : Math.round((count / total) * 100);
+
+        const bar = document.createElement('div');
+        bar.className = 'text-xs';
+        bar.innerHTML = `
+          <div class="flex items-center justify-between text-slate-600 dark:text-slate-300 font-medium mb-1">
+            <span>${getCategoryIcon(cat)} ${cat}</span>
+            <span>${count}건 (${pct}%)</span>
+          </div>
+          <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-400 to-amber-500 h-2 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+          </div>
+        `;
+        catContainer.appendChild(bar);
+      });
+    }
+
+    // Card Outer Drag & Drop (Dashboard Widgets Grid Reordering)
+    function initSortableWidgets() {
+      const mainGrid = document.getElementById('main-widgets-grid');
+      if (!mainGrid) return;
+
+      // Restore widget order
+      const savedOrder = localStorage.getItem(WIDGET_ORDER_KEY);
+      if (savedOrder) {
+        try {
+          const ids = JSON.parse(savedOrder);
+          ids.forEach(id => {
+            const el = mainGrid.querySelector(`[data-widget-id="${id}"]`);
+            if (el) mainGrid.appendChild(el);
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      new Sortable(mainGrid, {
+        animation: 200,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        onEnd: function () {
+          const order = Array.from(mainGrid.children).map(c => c.dataset.widgetId).filter(Boolean);
+          localStorage.setItem(WIDGET_ORDER_KEY, JSON.stringify(order));
+        }
+      });
+    }
+
+    function resetLayoutOrder() {
+      localStorage.removeItem(WIDGET_ORDER_KEY);
+      location.reload();
+    }
+
+    // Modal & Task Form Actions
+    function openTaskModal(prefill = {}) {
+      document.getElementById('task-form').reset();
+      document.getElementById('form-task-id').value = '';
+      document.getElementById('modal-task-title').innerHTML = `
+        <span class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center text-sm">
+          <i class="fa-solid fa-pen-nib"></i>
+        </span>
+        새 업무 등록
+      `;
+
+      // Prefill date or current date
+      const todayStr = '2026-09-15';
+      document.getElementById('form-task-date').value = prefill.date || todayStr;
+
+      // Populate Project options
+      populateProjectSelect('form-task-project', prefill.projectCode);
+
+      document.getElementById('task-modal').classList.remove('hidden');
+      document.getElementById('form-task-title').focus();
+    }
+
+    function editTaskModal(id) {
+      const task = appData.tasks.find(t => t.id === id);
+      if (!task) return;
+
+      document.getElementById('form-task-id').value = task.id;
+      document.getElementById('form-task-title').value = task.title;
+      document.getElementById('form-task-date').value = task.date;
+      populateProjectSelect('form-task-project', task.projectCode);
+      document.getElementById('form-task-category').value = task.category;
+      document.getElementById('form-task-status').value = task.status;
+      document.getElementById('form-task-priority').value = task.priority || '보통';
+      document.getElementById('form-task-weekday').value = task.weekday || '';
+      document.getElementById('form-task-note').value = task.note || '';
+
+      document.getElementById('modal-task-title').innerHTML = `
+        <span class="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center text-sm">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </span>
+        업무 수정
+      `;
+
+      document.getElementById('task-modal').classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('task-modal').classList.add('hidden');
+    }
+
+    function saveTaskForm(e) {
+      e.preventDefault();
+      const id = document.getElementById('form-task-id').value;
+      const title = document.getElementById('form-task-title').value.trim();
+      const date = document.getElementById('form-task-date').value;
+      const projectCode = document.getElementById('form-task-project').value;
+      const category = document.getElementById('form-task-category').value;
+      const status = document.getElementById('form-task-status').value;
+      const priority = document.getElementById('form-task-priority').value;
+      let weekday = document.getElementById('form-task-weekday').value;
+      const note = document.getElementById('form-task-note').value.trim();
+
+      // If weekday not set, compute from date
+      if (!weekday && date) {
+        const d = new Date(date).getDay();
+        const map = ['일', '월', '화', '수', '목', '금', '토'];
+        weekday = map[d];
+      }
+
+      const completed = status === '완료';
+
+      if (id) {
+        // Edit
+        const task = appData.tasks.find(t => t.id === id);
+        if (task) {
+          task.title = title;
+          task.date = date;
+          task.projectCode = projectCode;
+          task.category = category;
+          task.status = status;
+          task.priority = priority;
+          task.weekday = weekday;
+          task.note = note;
+          task.completed = completed;
+        }
+      } else {
+        // Create
+        appData.tasks.unshift({
+          id: 'task-' + Date.now(),
+          title,
+          date,
+          projectCode,
+          category,
+          status,
+          priority,
+          weekday,
+          note,
+          completed
+        });
+      }
+
+      saveData();
+      closeTaskModal();
+      renderAll();
+    }
+
+    function deleteTask(id) {
+      if (confirm('해당 업무를 삭제하시겠습니까?')) {
+        appData.tasks = appData.tasks.filter(t => t.id !== id);
+        saveData();
+        renderAll();
+      }
+    }
+
+    // Project Modal Actions
+    function openProjectModal() {
+      document.getElementById('project-form').reset();
+      renderModalProjectList();
+      document.getElementById('project-modal').classList.remove('hidden');
+    }
+
+    function closeProjectModal() {
+      document.getElementById('project-modal').classList.add('hidden');
+    }
+
+    function saveProjectForm(e) {
+      e.preventDefault();
+      const name = document.getElementById('form-project-name').value.trim();
+      const code = document.getElementById('form-project-code').value.trim().toUpperCase();
+      const deadline = document.getElementById('form-project-deadline').value;
+      const color = document.getElementById('form-project-color').value;
+
+      if (!name || !code) return;
+
+      if (appData.projects.some(p => p.code === code)) {
+        alert('이미 존재하는 프로젝트 약칭입니다.');
+        return;
+      }
+
+      appData.projects.push({
+        id: 'proj-' + Date.now(),
+        code,
+        name,
+        deadline,
+        color
+      });
+
+      saveData();
+      renderModalProjectList();
+      renderProjects();
+      updateFilterDropdowns();
+      document.getElementById('project-form').reset();
+    }
+
+    function renderModalProjectList() {
+      const list = document.getElementById('modal-project-list');
+      if (!list) return;
+
+      list.innerHTML = '';
+      appData.projects.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700';
+        item.innerHTML = `
+          <div>
+            <span class="font-extrabold ${getProjectBadgeStyle(p.code)} px-2 py-0.5 rounded text-[10px] mr-2">${p.code}</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">${p.name}</span>
+          </div>
+          <button onclick="deleteProject('${p.id}')" class="p-1 text-slate-400 hover:text-rose-500">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function deleteProject(id) {
+      const p = appData.projects.find(x => x.id === id);
+      if (!p) return;
+      if (confirm(`'${p.name}' 프로젝트를 삭제하시겠습니까?`)) {
+        appData.projects = appData.projects.filter(x => x.id !== id);
+        saveData();
+        renderModalProjectList();
+        renderProjects();
+        updateFilterDropdowns();
+      }
+    }
+
+    function populateProjectSelect(selectId, selectedCode) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+
+      select.innerHTML = '';
+      appData.projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.code;
+        opt.innerText = `${p.code} (${p.name})`;
+        if (p.code === selectedCode) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function updateFilterDropdowns() {
+      const sel = document.getElementById('project-filter-select');
+      if (!sel) return;
+
+      const current = sel.value;
+      sel.innerHTML = `<option value="ALL">전체 프로젝트</option>`;
+      appData.projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.code;
+        opt.innerText = `${p.code} - ${p.name}`;
+        if (p.code === current) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    // Filter & Search Handlers
+    function filterByProject(val) {
+      projectFilter = val;
+      renderTodayTasks();
+    }
+
+    function filterByCategory(val) {
+      categoryFilter = val;
+      renderTodayTasks();
+    }
+
+    function handleQuickSearch(val) {
+      searchQuery = val;
+      renderTodayTasks();
+    }
+
+    // Helper Badge Styles
+    function getProjectBadgeStyle(code) {
+      const p = appData.projects.find(x => x.code === code);
+      const color = p ? p.color : 'orange';
+      switch (color) {
+        case 'orange':
+          return 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700';
+        case 'emerald':
+          return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700';
+        case 'blue':
+          return 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-700';
+        case 'purple':
+          return 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 dark:border-purple-700';
+        case 'rose':
+          return 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700';
+        default:
+          return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300';
+      }
+    }
+
+    function getCategoryBadgeStyle(cat) {
+      switch (cat) {
+        case '회의':
+          return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
+        case '개발':
+          return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300';
+        case '코드리뷰':
+          return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
+        case '기획':
+          return 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300';
+        case '보고':
+          return 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300';
+        default:
+          return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+      }
+    }
+
+    function getCategoryIcon(cat) {
+      switch (cat) {
+        case '회의': return '☕';
+        case '개발': return '✨';
+        case '코드리뷰': return '👀';
+        case '기획': return '📐';
+        case '보고': return '📑';
+        default: return '📌';
+      }
+    }
+
+    function getStatusBadgeStyle(status) {
+      switch (status) {
+        case '완료':
+          return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold';
+        case '진행 중':
+          return 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold';
+        case '검토 중':
+          return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300 font-bold';
+        default:
+          return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+      }
+    }
+
+    // Export & Import Handlers
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id);
+      menu.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('backup-dropdown-container');
+      const menu = document.getElementById('backup-menu');
+      if (container && menu && !container.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    function exportDataJSON() {
+      const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `lges_task_dashboard_backup_${dateStr}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importDataJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (parsed && parsed.tasks && parsed.projects) {
+            appData = parsed;
+            saveData();
+            renderAll();
+            alert('성공적으로 데이터를 불러왔습니다!');
+          } else {
+            alert('유효하지 않은 백업 파일 형식입니다.');
+          }
+        } catch (err) {
+          alert('JSON 파일 파싱 실패: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function exportDataCSV() {
+      let csv = "\uFEFF"; // BOM for Korean Excel compatibility
+      csv += "날짜,프로젝트,업무구분,할일,상태,우선순위,요일,완료여부,비고\n";
+
+      appData.tasks.forEach(t => {
+        const row = [
+          t.date || '',
+          t.projectCode || '',
+          t.category || '',
+          `"${(t.title || '').replace(/"/g, '""')}"`,
+          t.status || '',
+          t.priority || '',
+          t.weekday || '',
+          t.completed ? '완료' : '미완료',
+          `"${(t.note || '').replace(/"/g, '""')}"`
+        ];
+        csv += row.join(',') + "\n";
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lges_tasks_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetToDemoData() {
+      if (confirm('정말로 샘플 데이터로 복원하시겠습니까? 현재 변경된 데이터가 초기화됩니다.')) {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+        renderAll();
+      }
+    }
+
+    // Keyboard Shortcuts
+    function initKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        // Ctrl + K : Focus quick search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+          e.preventDefault();
+          const input = document.getElementById('quick-search-input');
+          if (input) input.focus();
+        }
+        // Esc: Close Modals
+        if (e.key === 'Escape') {
+          closeTaskModal();
+          closeProjectModal();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
