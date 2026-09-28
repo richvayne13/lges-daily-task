@@ -636,101 +636,58 @@
     // 2. 초기 데이터 (Initial Data)
     // -------------------------------------------------------------
     const DEFAULT_DATA = {
-      monthly: [
-        { id: 'mon-1', text: 'HIPE 2단계 파일럿 레이어 검증 완료', progress: 80 },
-        { id: 'mon-2', text: '주간 업무 일지 템플릿 표준화 및 배포', progress: 100 },
-        { id: 'mon-3', text: '공정 수율 개선 과제 1차 리뷰 통과', progress: 50 }
-      ],
+      monthly: [],
       projects: [
-        { id: 'proj-hipe', code: 'HIPE', name: 'HIPE 평가자 시스템 개발', deadline: '2026-09-30', color: 'orange' },
-        { id: 'proj-battery', code: '배터리공정', name: '전극 코팅 수율 고도화', deadline: '2026-10-15', color: 'emerald' },
-        { id: 'proj-qc', code: '품질혁신', name: '인라인 외관 검사 알고리즘', deadline: '2026-11-01', color: 'blue' },
-        { id: 'proj-std', code: '표준화', name: '부서별 업무 템플릿 정립', deadline: '2026-09-25', color: 'purple' }
+        { id: 'proj-1789607331354', code: '자동보정', name: '자동보정', deadline: '2026-12-31', color: 'orange' }
       ],
       tasks: [
         {
-          id: 'task-1',
+          id: 'task-1789446991980',
           date: '2026-09-15',
-          projectCode: 'HIPE',
-          category: '회의',
-          title: '후보자 관리 레이어 리뷰',
+          projectCode: '일반',
+          category: '없음',
+          title: '라벨테스트',
           status: '진행 중',
           priority: '보통',
           completed: false,
           weekday: '화',
-          note: '전사 인터뷰 평가표 인터페이스 검토'
+          note: ''
         },
         {
-          id: 'task-2',
+          id: 'task-1789446982807',
           date: '2026-09-15',
-          projectCode: 'HIPE',
-          category: '개발',
-          title: '후보자 뷰 - 상단 이동 바 (GNB) 개발',
+          projectCode: '일반',
+          category: '없음',
+          title: '그림 ERS 작성',
           status: '진행 중',
           priority: '보통',
           completed: false,
           weekday: '화',
-          note: '반응형 내비게이션 바 컴포넌트 완성'
+          note: ''
         },
         {
-          id: 'task-3',
+          id: 'task-1789446975427',
           date: '2026-09-15',
-          projectCode: 'HIPE',
-          category: '코드리뷰',
-          title: '평가자 템플릿 불러오기 모달 구현',
-          status: '진행 중',
-          priority: '보통',
-          completed: false,
-          weekday: '화',
-          note: 'JSON 템플릿 파서 연동 및 에러핸들링'
-        },
-        {
-          id: 'task-4',
-          date: '2026-09-15',
-          projectCode: '배터리공정',
-          category: '보고',
-          title: '전극 슬러리 점도 측정 결과 주간 취합',
+          projectCode: '일반',
+          category: '없음',
+          title: '링 회의',
           status: '완료',
           priority: '보통',
           completed: true,
           weekday: '화',
-          note: '공정기술팀 공유 완료'
+          note: ''
         },
         {
-          id: 'task-5',
-          date: '2026-09-16',
-          projectCode: '품질혁신',
-          category: '기획',
-          title: '비전 검사 결함 판정 기준안 초안 작성',
+          id: 'task-1789447003442',
+          date: '2026-09-15',
+          projectCode: '일반',
+          category: '없음',
+          title: '9/4 16시 58분 퇴근',
           status: '진행 중',
           priority: '보통',
           completed: false,
-          weekday: '수',
-          note: '머신러닝 분류기 임계치 정의'
-        },
-        {
-          id: 'task-6',
-          date: '2026-09-17',
-          projectCode: '표준화',
-          category: '회의',
-          title: '주간 업무 일지 템플릿 팀 피드백 미팅',
-          status: '진행 중',
-          priority: '보통',
-          completed: false,
-          weekday: '목',
-          note: '사용자 편의성 검증'
-        },
-        {
-          id: 'task-7',
-          date: '2026-09-18',
-          projectCode: 'HIPE',
-          category: '보고',
-          title: 'HIPE 주간 릴리즈 보고서 작성',
-          status: '진행 중',
-          priority: '보통',
-          completed: false,
-          weekday: '금',
-          note: '경영진 주간 보고용'
+          weekday: '화',
+          note: ''
         }
       ]
     };
@@ -749,7 +706,7 @@
     let lastUndoAction = null;
     let undoToastTimer = null;
 
-    const STORAGE_KEY = 'LGES_DAILY_TASK_DASHBOARD_v2';
+    const STORAGE_KEY = 'LGES_DAILY_TASK_DASHBOARD_v3';
     const THEME_KEY = 'LGES_THEME_PREF';
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -817,17 +774,8 @@
           appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
       } else {
-        // v1 저장소 데이터 마이그레이션 확인
-        const v1Raw = localStorage.getItem('LGES_DAILY_TASK_DASHBOARD_v1');
-        if (v1Raw) {
-          try {
-            appData = JSON.parse(v1Raw);
-          } catch(e) {
-            appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-          }
-        } else {
-          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        }
+        // v3가 없으면 실제 업무 데이터(DEFAULT_DATA)로 자동 초기화
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
       }
       saveData();
     }
